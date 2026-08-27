@@ -2,7 +2,7 @@
  * @name Galaxy
  * @author Worlcat
  * @authorId 1452724190024171591
- * @version 2.27.0
+ * @version 2.29.0
  * @description Theme spatial optimise performance : nebuleuses, champ d'etoiles en parallaxe et etoiles filantes, sans backdrop-filter ni repaint continu.
  * @source https://github.com/Worlcat/betterdiscord-galaxy/blob/main/Galaxy.theme.css
  * @website https://github.com/Worlcat/betterdiscord-galaxy
@@ -157,6 +157,31 @@
   --button-filled-brand-background:       var(--gx-accent);
   --button-filled-brand-background-hover: var(--gx-accent-hi);
   --control-brand-foreground:             var(--gx-accent-hi);
+
+  /* Cartes du panneau de profil (activite recente, bio, connexions).
+     Discord les peint avec ces jetons, dont la valeur derive de sa
+     palette --neutral-*, d'ou leur bleu marine. Le !important est
+     necessaire : Discord les redefinit sur des selecteurs plus
+     specifiques que :root. */
+  --user-profile-overlay-background:          rgba(255, 255, 255, 0.06) !important;
+  --user-profile-overlay-background-hover:    rgba(255, 255, 255, 0.10) !important;
+  --user-profile-background-hover:            rgba(255, 255, 255, 0.08) !important;
+  --user-profile-toolbar-background:          rgba(255, 255, 255, 0.06) !important;
+  --user-profile-activity-toolbar-background: rgba(255, 255, 255, 0.06) !important;
+  --user-profile-border:                      var(--gx-border) !important;
+
+  /* Famille "gradient" : Discord s'en sert pour les fonds degrades des
+     cartes (ex. .listeningAlong, la carte Spotify du profil, qui fait
+     `var(--background-gradient-lowest, var(--background-base-low))`).
+     Sans ces lignes, seule une partie des cartes suit le theme. */
+  --background-gradient-lowest:  rgba(255, 255, 255, 0.06) !important;
+  --background-gradient-lower:   rgba(255, 255, 255, 0.06) !important;
+  --background-gradient-low:     rgba(255, 255, 255, 0.07) !important;
+  --background-gradient-high:    rgba(255, 255, 255, 0.08) !important;
+  --background-gradient-higher:  rgba(255, 255, 255, 0.09) !important;
+  --background-gradient-highest: rgba(255, 255, 255, 0.10) !important;
+  --background-gradient-chat:    transparent !important;
+  --background-gradient-app-frame: transparent !important;
 
   /* Mentions et reponses : Discord les surligne en jaune/orange via ces
      jetons. On les repeint en magenta pour rester dans la palette. */
