@@ -2,7 +2,7 @@
  * @name Galaxy
  * @author Worlcat
  * @authorId 1452724190024171591
- * @version 2.10.0
+ * @version 2.21.0
  * @description Theme spatial optimise performance : nebuleuses, champ d'etoiles en parallaxe et etoiles filantes, sans backdrop-filter ni repaint continu.
  * @source https://github.com/Worlcat/betterdiscord-galaxy/blob/main/Galaxy.theme.css
  * @website https://github.com/Worlcat/betterdiscord-galaxy
@@ -157,6 +157,13 @@
   --button-filled-brand-background:       var(--gx-accent);
   --button-filled-brand-background-hover: var(--gx-accent-hi);
   --control-brand-foreground:             var(--gx-accent-hi);
+
+  /* Mentions et reponses : Discord les surligne en jaune/orange via ces
+     jetons. On les repeint en magenta pour rester dans la palette. */
+  --background-mentioned:            rgba(241, 7, 163, 0.10);
+  --background-mentioned-hover:      rgba(241, 7, 163, 0.16);
+  --bg-mentioned:                    rgba(241, 7, 163, 0.10);
+  --bg-mentioned-hover:              rgba(241, 7, 163, 0.16);
 
   --scrollbar-thin-thumb:  rgba(168, 107, 255, 0.35);
   --scrollbar-thin-track:  transparent;
@@ -325,9 +332,15 @@ body {
 [class*="message_"]:hover {
   background-color: var(--gx-glass) !important;
 }
+/* Pas de box-shadow ici : Discord dessine deja sa propre barre laterale
+   en ::before, et les deux se superposaient. */
 [class*="mentioned_"] {
-  background-color: rgba(241, 7, 163, 0.10) !important;
-  box-shadow: inset 2px 0 0 var(--gx-nebula-2);
+  background-color: rgba(168, 107, 255, 0.09) !important;
+}
+/* Cette barre est peinte avec la couleur d'avertissement de Discord
+   (jaune) : on la repeint en violet, discret et dans la palette. */
+[class*="mentioned_"]::before {
+  background-color: rgba(168, 107, 255, 0.55) !important;
 }
 
 [class*="mention"] {
@@ -357,8 +370,8 @@ code, pre, [class*="hljs"] {
   background: transparent !important;
 }
 
-[class*="channelTextArea"] form,
-[class*="channelTextArea"] [class*="scrollableContainer"] {
+[class*="channelTextArea"] [class*="scrollableContainer"],
+[class*="channelTextArea"] [class*="inner_"] {
   background: linear-gradient(120deg,
               rgba(46, 24, 92, 0.48) 0%,
               rgba(24, 13, 52, 0.52) 100%) !important;
@@ -366,7 +379,7 @@ code, pre, [class*="hljs"] {
   border: 1px solid var(--gx-border);
   transition: border-color 0.12s linear;
 }
-[class*="channelTextArea"] form:focus-within {
+[class*="channelTextArea"] [class*="scrollableContainer"]:focus-within {
   border-color: var(--gx-accent);
 }
 
@@ -377,6 +390,115 @@ code, pre, [class*="hljs"] {
    --button-filled-brand-background (section 2). Pas de regle dediee :
    le selecteur [class*="colorBrand"] attrapait aussi les boutons du
    panneau vocal, qui se retrouvaient en degrade violet. */
+
+/* Boutons du panneau vocal (micro, casque, camera, partage...).
+   Discord les peint en aplat sombre : sur un panneau translucide ils
+   ressortent en pastilles noires. Un voile clair les fait ressortir
+   comme du violet eclairci, sans leur donner de couleur propre. */
+[class*="panels_"] button,
+[class*="actionButtons"] button,
+[class*="voicePanel"] button,
+[class*="rtcConnectionStatus"] ~ * button {
+  background-color: rgba(255, 255, 255, 0.07) !important;
+  border-radius: 10px;
+  transition: background-color 0.12s linear;
+}
+[class*="panels_"] button:hover,
+[class*="actionButtons"] button:hover,
+[class*="voicePanel"] button:hover {
+  background-color: rgba(255, 255, 255, 0.14) !important;
+}
+
+/* ------------------------------------------------------------
+   Astronaute qui marche sur la barre de saisie.
+
+   Sprite SVG en data-URI : quatre images de 32x32 cote a cote,
+   selectionnees par `background-position` en `steps(4)`. Les jambes
+   et les bras bougent vraiment, le corps se souleve d'un pixel sur
+   les images de passage.
+
+   Deux animations sur la meme couche :
+     - `translate` (composite GPU) pour la traversee ;
+     - `background-position` en 4 paliers, soit ~7 changements par
+       seconde : un repaint minuscule sur une bande de 32 px.
+
+   Le pseudo-element occupe TOUTE la largeur de la barre
+   (left: 0; right: 0), donc un `translate` en pourcentage se calcule
+   sur cette largeur : l'astronaute la traverse exactement, quelle que
+   soit la taille de la fenetre. Le sprite, lui, est positionne en px
+   depuis le bord gauche de cette bande, ce qui rend les deux
+   animations independantes.
+   ------------------------------------------------------------ */
+/* L'astronaute est pose au-dessus de la boite du composeur : il faut
+   donc que la chaine de parents ne le decoupe pas. Un seul
+   `overflow: hidden` quelque part au-dessus et il devient invisible.
+   Le composeur ne s'appuie pas sur ce decoupage pour sa mise en page. */
+[class*="channelBottomBarArea"],
+form[class*="form_"],
+[class*="channelTextArea"],
+[class*="channelTextArea"] [class*="scrollableContainer"] {
+  overflow: visible !important;
+}
+
+/* Ancrage de l'astronaute : le conteneur channelTextArea lui-meme.
+   Attention a la hierarchie reelle de Discord : le <form> est le
+   PARENT, channelTextArea est dedans. Un selecteur du type
+   `[class*="channelTextArea"] form` ne correspond a rien. */
+/* Plusieurs elements imbriques portent la classe channelTextArea :
+   sans filtre, chacun recoit son propre astronaute. `:not(:has(...))`
+   ne garde que le plus profond, donc un seul. */
+[class*="channelTextArea"]:not(:has([class*="channelTextArea"])) {
+  position: relative;
+}
+
+[class*="channelTextArea"]:not(:has([class*="channelTextArea"]))::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -27px;
+  height: 32px;
+  z-index: 20;            /* passe au-dessus de la barre "Repondre a..." */
+  pointer-events: none;   /* ne bloque jamais un clic dans la barre */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='128' height='32' viewBox='0 0 128 32'%3E%3Cg transform='translate(0,0)'%3E%3Cg transform='translate(14,20) rotate(25)'%3E%3Crect x='-2' y='0' width='4' height='8' rx='2' fill='%23c3cbe8'/%3E%3Crect x='-2.6' y='7' width='5.2' height='3.4' rx='1.7' fill='%237b2ff7'/%3E%3C/g%3E%3Cg transform='translate(18,20) rotate(-25)'%3E%3Crect x='-2' y='0' width='4' height='8' rx='2' fill='%23c3cbe8'/%3E%3Crect x='-2.6' y='7' width='5.2' height='3.4' rx='1.7' fill='%237b2ff7'/%3E%3C/g%3E%3Crect x='7.5' y='10' width='4.5' height='9' rx='2' fill='%23b9c2e0'/%3E%3Cg transform='translate(12,12) rotate(-20)'%3E%3Crect x='-1.7' y='0' width='3.4' height='7' rx='1.7' fill='%23c3cbe8'/%3E%3Ccircle cx='0' cy='7.6' r='2' fill='%237b2ff7'/%3E%3C/g%3E%3Crect x='11' y='8' width='10' height='13' rx='4.5' fill='%23eaeeff'/%3E%3Crect x='12.5' y='15' width='7' height='2.2' rx='1.1' fill='%23a86bff'/%3E%3Cg transform='translate(20,12) rotate(20)'%3E%3Crect x='-1.7' y='0' width='3.4' height='7' rx='1.7' fill='%23eaeeff'/%3E%3Ccircle cx='0' cy='7.6' r='2' fill='%237b2ff7'/%3E%3C/g%3E%3Ccircle cx='16' cy='7' r='6.4' fill='%23eaeeff'/%3E%3Ccircle cx='17' cy='7' r='4.6' fill='%231a1038'/%3E%3Cpath d='M15 4.6a3.4 3.4 0 0 1 3.4 1.2' stroke='%237fe6ff' stroke-width='1.1' stroke-linecap='round' fill='none' opacity='.85'/%3E%3Ccircle cx='16' cy='7' r='6.4' fill='none' stroke='%23a86bff' stroke-width='.9' opacity='.8'/%3E%3C/g%3E%3Cg transform='translate(32,-1)'%3E%3Cg transform='translate(14,20) rotate(0)'%3E%3Crect x='-2' y='0' width='4' height='8' rx='2' fill='%23c3cbe8'/%3E%3Crect x='-2.6' y='7' width='5.2' height='3.4' rx='1.7' fill='%237b2ff7'/%3E%3C/g%3E%3Cg transform='translate(18,20) rotate(0)'%3E%3Crect x='-2' y='0' width='4' height='8' rx='2' fill='%23c3cbe8'/%3E%3Crect x='-2.6' y='7' width='5.2' height='3.4' rx='1.7' fill='%237b2ff7'/%3E%3C/g%3E%3Crect x='7.5' y='10' width='4.5' height='9' rx='2' fill='%23b9c2e0'/%3E%3Cg transform='translate(12,12) rotate(0)'%3E%3Crect x='-1.7' y='0' width='3.4' height='7' rx='1.7' fill='%23c3cbe8'/%3E%3Ccircle cx='0' cy='7.6' r='2' fill='%237b2ff7'/%3E%3C/g%3E%3Crect x='11' y='8' width='10' height='13' rx='4.5' fill='%23eaeeff'/%3E%3Crect x='12.5' y='15' width='7' height='2.2' rx='1.1' fill='%23a86bff'/%3E%3Cg transform='translate(20,12) rotate(0)'%3E%3Crect x='-1.7' y='0' width='3.4' height='7' rx='1.7' fill='%23eaeeff'/%3E%3Ccircle cx='0' cy='7.6' r='2' fill='%237b2ff7'/%3E%3C/g%3E%3Ccircle cx='16' cy='7' r='6.4' fill='%23eaeeff'/%3E%3Ccircle cx='17' cy='7' r='4.6' fill='%231a1038'/%3E%3Cpath d='M15 4.6a3.4 3.4 0 0 1 3.4 1.2' stroke='%237fe6ff' stroke-width='1.1' stroke-linecap='round' fill='none' opacity='.85'/%3E%3Ccircle cx='16' cy='7' r='6.4' fill='none' stroke='%23a86bff' stroke-width='.9' opacity='.8'/%3E%3C/g%3E%3Cg transform='translate(64,0)'%3E%3Cg transform='translate(14,20) rotate(-25)'%3E%3Crect x='-2' y='0' width='4' height='8' rx='2' fill='%23c3cbe8'/%3E%3Crect x='-2.6' y='7' width='5.2' height='3.4' rx='1.7' fill='%237b2ff7'/%3E%3C/g%3E%3Cg transform='translate(18,20) rotate(25)'%3E%3Crect x='-2' y='0' width='4' height='8' rx='2' fill='%23c3cbe8'/%3E%3Crect x='-2.6' y='7' width='5.2' height='3.4' rx='1.7' fill='%237b2ff7'/%3E%3C/g%3E%3Crect x='7.5' y='10' width='4.5' height='9' rx='2' fill='%23b9c2e0'/%3E%3Cg transform='translate(12,12) rotate(20)'%3E%3Crect x='-1.7' y='0' width='3.4' height='7' rx='1.7' fill='%23c3cbe8'/%3E%3Ccircle cx='0' cy='7.6' r='2' fill='%237b2ff7'/%3E%3C/g%3E%3Crect x='11' y='8' width='10' height='13' rx='4.5' fill='%23eaeeff'/%3E%3Crect x='12.5' y='15' width='7' height='2.2' rx='1.1' fill='%23a86bff'/%3E%3Cg transform='translate(20,12) rotate(-20)'%3E%3Crect x='-1.7' y='0' width='3.4' height='7' rx='1.7' fill='%23eaeeff'/%3E%3Ccircle cx='0' cy='7.6' r='2' fill='%237b2ff7'/%3E%3C/g%3E%3Ccircle cx='16' cy='7' r='6.4' fill='%23eaeeff'/%3E%3Ccircle cx='17' cy='7' r='4.6' fill='%231a1038'/%3E%3Cpath d='M15 4.6a3.4 3.4 0 0 1 3.4 1.2' stroke='%237fe6ff' stroke-width='1.1' stroke-linecap='round' fill='none' opacity='.85'/%3E%3Ccircle cx='16' cy='7' r='6.4' fill='none' stroke='%23a86bff' stroke-width='.9' opacity='.8'/%3E%3C/g%3E%3Cg transform='translate(96,-1)'%3E%3Cg transform='translate(14,20) rotate(0)'%3E%3Crect x='-2' y='0' width='4' height='8' rx='2' fill='%23c3cbe8'/%3E%3Crect x='-2.6' y='7' width='5.2' height='3.4' rx='1.7' fill='%237b2ff7'/%3E%3C/g%3E%3Cg transform='translate(18,20) rotate(0)'%3E%3Crect x='-2' y='0' width='4' height='8' rx='2' fill='%23c3cbe8'/%3E%3Crect x='-2.6' y='7' width='5.2' height='3.4' rx='1.7' fill='%237b2ff7'/%3E%3C/g%3E%3Crect x='7.5' y='10' width='4.5' height='9' rx='2' fill='%23b9c2e0'/%3E%3Cg transform='translate(12,12) rotate(0)'%3E%3Crect x='-1.7' y='0' width='3.4' height='7' rx='1.7' fill='%23c3cbe8'/%3E%3Ccircle cx='0' cy='7.6' r='2' fill='%237b2ff7'/%3E%3C/g%3E%3Crect x='11' y='8' width='10' height='13' rx='4.5' fill='%23eaeeff'/%3E%3Crect x='12.5' y='15' width='7' height='2.2' rx='1.1' fill='%23a86bff'/%3E%3Cg transform='translate(20,12) rotate(0)'%3E%3Crect x='-1.7' y='0' width='3.4' height='7' rx='1.7' fill='%23eaeeff'/%3E%3Ccircle cx='0' cy='7.6' r='2' fill='%237b2ff7'/%3E%3C/g%3E%3Ccircle cx='16' cy='7' r='6.4' fill='%23eaeeff'/%3E%3Ccircle cx='17' cy='7' r='4.6' fill='%231a1038'/%3E%3Cpath d='M15 4.6a3.4 3.4 0 0 1 3.4 1.2' stroke='%237fe6ff' stroke-width='1.1' stroke-linecap='round' fill='none' opacity='.85'/%3E%3Ccircle cx='16' cy='7' r='6.4' fill='none' stroke='%23a86bff' stroke-width='.9' opacity='.8'/%3E%3C/g%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-size: 128px 32px;
+  background-position: 0 0;
+  /* Fenetre de 32 px sur la planche : sans elle, les 4 images du cycle
+     s'affichent cote a cote et on voit 4 astronautes. Le clip agit dans
+     le repere local de l'element, donc le `translate` de la marche n'en
+     est pas affecte : la fenetre voyage avec l'astronaute. */
+  clip-path: inset(0 calc(100% - 32px) 0 0);
+  will-change: translate;
+  animation: gx-walk 38s linear infinite,
+             gx-steps 0.56s steps(4) infinite;
+}
+
+/* Les barres attachees au composeur (reponse, upload, edition) sont
+   peintes en aplat sombre et masquaient l'astronaute : on les rend
+   translucides comme le reste, et l'astronaute leur passe au-dessus. */
+[class*="attachedBars"],
+[class*="replyBar"],
+[class*="repliedTextPreview"] {
+  background: rgba(46, 24, 92, 0.42) !important;
+}
+
+@keyframes gx-walk {
+  0%   { translate: 0 0;   opacity: 0; }
+  3%   { opacity: 1; }
+  95%  { opacity: 1; }
+  100% { translate: calc(100% - 32px) 0; opacity: 0; }
+}
+
+/* Defilement du sprite : 4 paliers, une image par pas. */
+@keyframes gx-steps {
+  from { background-position: 0 0; }
+  to   { background-position: -128px 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [class*="channelTextArea"]:not(:has([class*="channelTextArea"]))::before { animation: none !important; opacity: 0; }
+}
 
 /* Barres de defilement */
 ::-webkit-scrollbar { width: 8px; height: 8px; }

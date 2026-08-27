@@ -13,6 +13,7 @@ sans repaint ni recalcul de layout.
 - Champ d'étoiles secondaire qui dérive lentement, pour un effet de parallaxe.
 - Étoiles filantes traversant l'écran en diagonale, environ toutes les 4 secondes.
 - Accents violets : salon actif, pilule de sélection, mentions, scrollbars, boutons.
+- Un astronaute traverse la barre de saisie à pied — sprite SVG intégré, aucune image à charger.
 
 ## Installation
 
