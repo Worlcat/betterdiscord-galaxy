@@ -2,7 +2,7 @@
  * @name Galaxy
  * @author Worlcat
  * @authorId 1452724190024171591
- * @version 2.25.0
+ * @version 2.29.0
  * @description Theme spatial optimise performance : nebuleuses, champ d'etoiles en parallaxe et etoiles filantes, sans backdrop-filter ni repaint continu.
  * @source https://github.com/Worlcat/betterdiscord-galaxy/blob/main/Galaxy.theme.css
  * @website https://github.com/Worlcat/betterdiscord-galaxy
@@ -110,6 +110,9 @@
   --background-mod-subtle:       var(--gx-glass);
   --background-mod-faint:        rgba(255, 255, 255, 0.03);
   --background-mod-strong:       var(--gx-glass-hi);
+  /* Peignent la bio du serveur et les lignes de connexions du profil. */
+  --background-mod-muted:        rgba(255, 255, 255, 0.04);
+  --background-mod-normal:       rgba(255, 255, 255, 0.06);
   --background-overlay-chat:     transparent;
 
   /* Jetons du design system precedent, conserves pour les clients
@@ -165,6 +168,35 @@
   --bg-mentioned:                    rgba(241, 7, 163, 0.10);
   --bg-mentioned-hover:              rgba(241, 7, 163, 0.16);
 
+  /* Cartes du profil (collection de jeux, activite recente, connexions).
+     Leur valeur derive de la palette --neutral-* de Discord, d'ou le
+     bleu marine. Le !important est necessaire : Discord les redefinit
+     sur des selecteurs plus specifiques que :root. */
+  --user-profile-overlay-background:          rgba(255, 255, 255, 0.06) !important;
+  --user-profile-overlay-background-hover:    rgba(255, 255, 255, 0.10) !important;
+  --user-profile-background-hover:            rgba(255, 255, 255, 0.08) !important;
+  --user-profile-toolbar-background:          rgba(255, 255, 255, 0.06) !important;
+  --user-profile-activity-toolbar-background: rgba(255, 255, 255, 0.06) !important;
+  --user-profile-border:                      var(--gx-border) !important;
+
+  /* Famille "gradient" : la carte Spotify fait
+     `var(--background-gradient-lowest, var(--background-base-low))`. */
+  --background-gradient-lowest:  rgba(255, 255, 255, 0.06) !important;
+  --background-gradient-lower:   rgba(255, 255, 255, 0.06) !important;
+  --background-gradient-low:     rgba(255, 255, 255, 0.07) !important;
+  --background-gradient-high:    rgba(255, 255, 255, 0.08) !important;
+  --background-gradient-higher:  rgba(255, 255, 255, 0.09) !important;
+  --background-gradient-highest: rgba(255, 255, 255, 0.10) !important;
+  --background-gradient-chat:      transparent !important;
+  --background-gradient-app-frame: transparent !important;
+
+  /* Rayons d'angle : un cran au-dessus de Discord (4/8/12/16) pour que
+     les blocs cessent de se lire comme des rectangles pleins. */
+  --radius-xs: 6px;
+  --radius-sm: 12px;
+  --radius-md: 16px;
+  --radius-lg: 20px;
+
   --scrollbar-thin-thumb:  rgba(168, 107, 255, 0.35);
   --scrollbar-thin-track:  transparent;
   --scrollbar-auto-thumb:  rgba(168, 107, 255, 0.35);
@@ -216,34 +248,25 @@ body {
 }
 
 /* L'app doit laisser passer le fond.
-   Les variables ne suffisent pas : Discord peint plusieurs conteneurs
-   avec des regles CSS propres, il faut donc les neutraliser un par un.
-   C'est le seul endroit du theme ou j'utilise des selecteurs larges ;
-   ils coutent un peu au recalcul de style, mais sans eux le fond est
-   entierement masque et le theme n'a plus d'objet.
-   Les panneaux qui doivent rester teintes (sidebar, membres, rail) se
-   voient reattribuer leur couleur en section 4, qui vient apres. */
+
+   LISTE VOLONTAIREMENT MINIMALE. La version precedente neutralisait une
+   quinzaine de conteneurs generiques (container_, content_, scroller_,
+   layer_, page_...). Deux consequences, mesurees :
+     - elle vidait aussi les popouts, menus et modales, obligeant a
+       empiler des exceptions, puis des exceptions aux exceptions ;
+     - ces selecteurs en cascade sont reevalues a chaque mutation du
+       DOM, ce qui provoquait des micro-blocages.
+   Ici on ne neutralise que les couches qui masquent reellement le fond.
+   Tout le reste garde ses fonds Discord, donc les surfaces flottantes
+   sont opaques SANS aucune regle d'exception. */
 #app-mount,
-#app-mount > div,
-#app-mount [class*="app_"],
+#app-mount [class*="bg_"],
+#app-mount [class*="baseLayer"],
 #app-mount [class*="appAsidePanelWrapper"],
 #app-mount [class*="notAppAsidePanel"],
-#app-mount [class*="baseLayer"],
-#app-mount [class*="layers_"],
-#app-mount [class*="layer_"],
-#app-mount [class*="container_"],
-#app-mount [class*="content_"],
-#app-mount [class*="chat_"],
 #app-mount [class*="chatContent"],
 #app-mount [class*="messagesWrapper"],
-#app-mount [class*="scroller_"],
-#app-mount [class*="page_"],
-#app-mount [class*="bg_"],
-#app-mount [class*="base_"],
-#app-mount [class*="bannerVisible"] {
-  /* Propriete raccourcie, pas background-color : Discord peint certains
-     conteneurs avec un degrade, qu'une surcharge de la seule couleur
-     laisserait intact. */
+#app-mount [class*="chat_"] {
   background: transparent !important;
 }
 
@@ -535,8 +558,6 @@ code, pre, [class*="hljs"] {
    c'est tout ce que ca coute.
 
    Repartition des calques (html et body fournissent les pseudo-elements) :
-     html::after  -> etoile filante 1, AU-DESSUS de l'interface
-     body::after  -> etoile filante 2, AU-DESSUS de l'interface
    Les filantes doivent passer au-dessus : les panneaux de Discord sont
    opaques a plus de 80%, une trainee qui passe dessous est invisible.
    pointer-events: none garantit qu'elles n'interceptent aucun clic.
@@ -556,65 +577,15 @@ code, pre, [class*="hljs"] {
    deplacement etales sur 200 secondes.
    Les etoiles fixes du fond (section 3) restent, elles ne coutent rien. */
 
-/* --- Etoiles filantes : une trainee violette a tete blanche qui
-   traverse l'ecran en diagonale. Le rotate est applique AVANT le
-   translate, donc l'etoile se deplace le long de son propre axe : la
-   trainee suit exactement sa trajectoire.
-   Deux calques identiques decales dans le temps, ce qui donne un
-   passage toutes les ~4 s au lieu d'un toutes les 14 s. --- */
-html::after,
-body::after {
-  content: "";
-  position: fixed;
-  left: 0;
-  z-index: 10;             /* au-dessus de #app-mount */
-  width: 260px;
-  height: 3px;
-  pointer-events: none;
-  border-radius: 3px;
-  background: linear-gradient(90deg,
-              rgba(168, 107, 255, 0) 0%,
-              rgba(168, 107, 255, 0.70) 55%,
-              rgba(201, 162, 255, 0.95) 88%,
-              rgba(255, 255, 255, 1) 100%);
-  /* halo de la tete : peint une seule fois avec le calque, ensuite
-     seul le transform bouge - aucun repaint pendant la course */
-  box-shadow: 6px 0 12px rgba(201, 162, 255, 0.55);
-  opacity: 0;
-  will-change: transform, opacity;
-}
-
-html::after {
-  top: 4vh;
-  animation: gx-shoot-a 8s linear infinite;
-}
-
-body::after {
-  top: 26vh;
-  animation: gx-shoot-b 8s linear infinite;
-  animation-delay: -4s;    /* decale d'une demi-boucle */
-}
-
-/* Deux trajectoires differentes pour eviter l'effet metronome. */
-@keyframes gx-shoot-a {
-  0%   { transform: rotate(32deg) translate3d(-25vw, 0, 0); opacity: 0; }
-  2%   { opacity: 1; }
-  10%  { opacity: 1; }
-  12%  { transform: rotate(32deg) translate3d(140vw, 0, 0); opacity: 0; }
-  100% { transform: rotate(32deg) translate3d(140vw, 0, 0); opacity: 0; }
-}
-@keyframes gx-shoot-b {
-  0%   { transform: rotate(19deg) translate3d(-25vw, 0, 0); opacity: 0; }
-  2%   { opacity: 1; }
-  10%  { opacity: 1; }
-  12%  { transform: rotate(19deg) translate3d(140vw, 0, 0); opacity: 0; }
-  100% { transform: rotate(19deg) translate3d(140vw, 0, 0); opacity: 0; }
-}
+/* Les etoiles filantes ont ete retirees. Mesure a l'appui, leurs deux
+   couches `position: fixed` en animation permanente coutaient 5,4 %
+   d'un coeur - plus du double de l'astronaute - alors qu'elles ne sont
+   visibles qu'environ une seconde sur huit. Une animation continue
+   empeche le compositeur de s'endormir, meme quand son element est
+   invisible : c'est le vrai cout, pas le dessin lui-meme. */
 
 /* Respecte le reglage systeme "reduire les animations". */
 @media (prefers-reduced-motion: reduce) {
-  html::after,
-  body::after { animation: none !important; }
-  html::after,
-  body::after { opacity: 0; }
+  [class*="channelTextArea"]::before { animation: none !important; }
 }
+
