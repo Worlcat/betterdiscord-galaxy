@@ -2,7 +2,7 @@
  * @name Galaxy
  * @author Worlcat
  * @authorId 1452724190024171591
- * @version 2.21.0
+ * @version 2.26.0
  * @description Theme spatial optimise performance : nebuleuses, champ d'etoiles en parallaxe et etoiles filantes, sans backdrop-filter ni repaint continu.
  * @source https://github.com/Worlcat/betterdiscord-galaxy/blob/main/Galaxy.theme.css
  * @website https://github.com/Worlcat/betterdiscord-galaxy
@@ -247,6 +247,37 @@ body {
   background: transparent !important;
 }
 
+/* Les surfaces flottantes doivent rester OPAQUES : un popout se
+   superpose a l'interface, le texte du dessous transparaitrait au
+   travers.
+
+   Ce n'est pas l'element "popout" lui-meme qui etait transparent, mais
+   un element INTERNE portant `container_` : mes propres regles de
+   transparence (section 3) l'atteignaient. D'ou une regle qui vise les
+   descendants, avec une specificite superieure (1,2,0 contre 1,1,0) :
+   elle annule la transparence la ou elle ne doit pas s'appliquer. */
+#app-mount [class*="layerContainer" i] [class*="container_"],
+#app-mount [class*="layerContainer" i] [class*="content_"],
+#app-mount [class*="layerContainer" i] [class*="scroller_"],
+#app-mount [class*="layerContainer" i] [class*="layer_"],
+#app-mount [class*="layerContainer" i] [class*="base_"],
+#app-mount [class*="layerContainer" i] [class*="bg_"],
+#app-mount [class*="popout" i] [class*="container_"],
+#app-mount [class*="popout" i] [class*="content_"],
+#app-mount [class*="popout" i] [class*="scroller_"],
+#app-mount [class*="menu_" i] [class*="container_"],
+#app-mount [class*="menu_" i] [class*="scroller_"] {
+  background-color: var(--gx-floating) !important;
+}
+
+/* Exception a l'exception : le VOILE derriere une fenetre n'est pas une
+   surface de contenu, il doit rester translucide - sinon il masque tout
+   Discord. Meme specificite que la regle ci-dessus, place apres. */
+#app-mount [class*="layerContainer" i] [class*="backdrop" i],
+#app-mount [class*="backdrop" i] {
+  background-color: rgba(5, 3, 15, 0.72) !important;
+}
+
 /* ============================================================
    4. SURFACES
    Couleurs semi-transparentes simples : un blend GPU, pas de flou.
@@ -254,6 +285,8 @@ body {
 /* Degrade violet plutot qu'un aplat sombre : meme a faible opacite, un
    gris neutre pose sur une zone noire du fond se lit comme une bande. */
 [class*="sidebar_"],
+[class*="privateChannels"],
+[class*="nowPlayingColumn"],
 [class*="membersWrap"],
 [class*="members_"],
 [class*="memberList"],
