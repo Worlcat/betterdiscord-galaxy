@@ -1,0 +1,441 @@
+/**
+ * @name Galaxy
+ * @author worlcat
+ * @authorId 000000000000000000
+ * @version 2.2.0
+ * @description Theme spatial optimise performance : nebuleuses, champ d'etoiles en parallaxe et etoiles filantes, sans backdrop-filter ni repaint continu.
+ * @source https://github.com/Worlcat/betterdiscord-galaxy/blob/main/Galaxy.theme.css
+ * @website https://github.com/Worlcat/betterdiscord-galaxy
+ * @invite
+ */
+
+/*
+ * NOTE PERFORMANCE
+ * Ce theme est concu pour ne rien couter en continu :
+ *  - aucun backdrop-filter (le poste le plus cher : recomposition de
+ *    tout ce qui se trouve derriere la surface, a chaque frame) ;
+ *  - fond peint une seule fois puis mis en cache par le compositeur ;
+ *  - les deux seules animations (derive des etoiles, etoile filante)
+ *    n'animent que transform et opacity : composition GPU pure, zero
+ *    repaint et zero recalcul de layout ;
+ *  - aucun filter: drop-shadow / blur au survol (repaint a chaque hover) ;
+ *  - transitions limitees a background-color et color, jamais sur des
+ *    proprietes qui declenchent un relayout ;
+ *  - selecteurs cibles : on evite les [class*="container_"] et autres
+ *    fourre-tout qui matchent des milliers de noeuds a chaque recalcul.
+ * Le rendu "verre" est simule par des couleurs semi-transparentes
+ * empilees, qui coutent un simple blend au GPU.
+ */
+
+/* ============================================================
+   1. PALETTE
+   Modifie uniquement ce bloc pour changer l'ambiance du theme.
+   ============================================================ */
+:root {
+  /* Fonds : du plus profond (espace) au plus clair (surfaces) */
+  --gx-void:      #05030f;
+  --gx-deep:      #0a0618;
+
+  /* Nebuleuses (halos colores du fond) */
+  --gx-nebula-1:  #7b2ff7;   /* violet */
+  --gx-nebula-2:  #f107a3;   /* magenta */
+  --gx-nebula-3:  #2b6bff;   /* bleu */
+  --gx-nebula-4:  #00d4ff;   /* cyan */
+
+  /* Accents / interactions */
+  --gx-accent:    #a86bff;
+  --gx-accent-hi: #c9a2ff;
+
+  /* Texte */
+  --gx-text:       #ece8ff;
+  --gx-text-muted: #a79fd0;
+  --gx-text-dim:   #6f6796;
+
+  /* Surfaces : opacites deja resolues, aucun calcul au runtime */
+  --gx-panel:     rgba(14, 9, 30, 0.82);
+  --gx-panel-2:   rgba(9, 5, 21, 0.88);
+  --gx-floating:  #150e2c;   /* opaque : popouts et menus ne laissent
+                                pas passer le fond, donc pas de blend */
+  --gx-glass:     rgba(255, 255, 255, 0.04);
+  --gx-glass-hi:  rgba(255, 255, 255, 0.08);
+  --gx-border:    rgba(168, 107, 255, 0.18);
+
+  --gx-radius:    12px;
+}
+
+/* ============================================================
+   2. MAPPING DES VARIABLES DISCORD
+   L'essentiel du theme passe par ici : redefinir des variables ne
+   coute rien au rendu, contrairement aux regles de surcharge.
+   ============================================================ */
+:root,
+.theme-dark,
+.theme-light,
+.theme-darker,
+.theme-midnight {
+  --background-primary:            transparent;
+  --background-secondary:          transparent;
+  --background-secondary-alt:      transparent;
+  --background-tertiary:           transparent;
+  --background-accent:             var(--gx-accent);
+  --background-floating:           var(--gx-floating);
+  --background-nested-floating:    #1c1338;
+  --background-mobile-primary:     transparent;
+  --background-mobile-secondary:   transparent;
+  --background-message-hover:      var(--gx-glass);
+  --background-modifier-hover:     var(--gx-glass);
+  --background-modifier-active:    var(--gx-glass-hi);
+  --background-modifier-selected:  var(--gx-glass-hi);
+  --background-modifier-accent:    var(--gx-border);
+
+  /* Jetons du nouveau design system Discord */
+  --bg-base-primary:               transparent;
+  --bg-base-secondary:             transparent;
+  --bg-base-tertiary:              transparent;
+  --bg-base-lower:                 transparent;
+  --bg-surface-overlay:            var(--gx-floating);
+  --bg-surface-raised:             var(--gx-glass);
+  --bg-surface-higher:             var(--gx-glass-hi);
+  --bg-mod-subtle:                 var(--gx-glass);
+  --bg-mod-faint:                  rgba(255, 255, 255, 0.03);
+  --bg-mod-strong:                 var(--gx-glass-hi);
+  --border-subtle:                 var(--gx-border);
+  --border-faint:                  rgba(168, 107, 255, 0.10);
+
+  --channeltextarea-background:    rgba(26, 17, 54, 0.72);
+  --chat-background:               transparent;
+  --chat-border:                   var(--gx-border);
+  --activity-card-background:      var(--gx-glass);
+  --modal-background:              #0d0820;
+  --modal-footer-background:       #080513;
+  --input-background:              rgba(5, 3, 15, 0.55);
+  --deprecated-panel-background:   var(--gx-panel-2);
+
+  --text-normal:      var(--gx-text);
+  --text-default:     var(--gx-text);
+  --text-muted:       var(--gx-text-dim);
+  --text-primary:     var(--gx-text);
+  --text-secondary:   var(--gx-text-muted);
+  --text-tertiary:    var(--gx-text-dim);
+  --header-primary:   #ffffff;
+  --header-secondary: var(--gx-text-muted);
+  --interactive-normal: var(--gx-text-muted);
+  --interactive-hover:  var(--gx-text);
+  --interactive-active: #ffffff;
+  --interactive-muted:  var(--gx-text-dim);
+  --channels-default:   var(--gx-text-muted);
+  --channel-icon:       var(--gx-text-dim);
+
+  --brand-500:                            var(--gx-accent);
+  --brand-experiment:                     var(--gx-accent);
+  --brand-experiment-500:                 var(--gx-accent);
+  --button-filled-brand-background:       var(--gx-accent);
+  --button-filled-brand-background-hover: var(--gx-accent-hi);
+  --control-brand-foreground:             var(--gx-accent-hi);
+
+  --scrollbar-thin-thumb:  rgba(168, 107, 255, 0.35);
+  --scrollbar-thin-track:  transparent;
+  --scrollbar-auto-thumb:  rgba(168, 107, 255, 0.35);
+  --scrollbar-auto-track:  transparent;
+  --scrollbar-auto-scrollbar-color-thumb: rgba(168, 107, 255, 0.35);
+  --scrollbar-auto-scrollbar-color-track: transparent;
+}
+
+/* ============================================================
+   3. FOND : peint une seule fois
+   Tout tient dans background-image sur <body> : un seul calque,
+   aucun pseudo-element supplementaire a compositer, aucune
+   animation. Le GPU le met en cache et ne le repeint plus.
+   Les etoiles sont des micro-gradients repetes (une seule tuile
+   de 520x300 px en memoire, pas d'image a telecharger).
+   ============================================================ */
+body {
+  background-color: var(--gx-void);
+  background-image:
+    /* etoiles */
+    radial-gradient(1px 1px at 20px 30px,   rgba(255, 255, 255, 0.90), transparent),
+    radial-gradient(1px 1px at 90px 140px,  rgba(255, 255, 255, 0.60), transparent),
+    radial-gradient(1.6px 1.6px at 160px 60px, rgba(201, 162, 255, 0.85), transparent),
+    radial-gradient(1px 1px at 250px 200px, rgba(255, 255, 255, 0.50), transparent),
+    radial-gradient(1.4px 1.4px at 320px 110px, rgba(0, 212, 255, 0.65), transparent),
+    radial-gradient(1px 1px at 400px 260px, rgba(255, 255, 255, 0.70), transparent),
+    radial-gradient(1px 1px at 470px 40px,  rgba(255, 255, 255, 0.45), transparent),
+    /* nebuleuses */
+    radial-gradient(42% 38% at 18% 22%, rgba(123, 47, 247, 0.45) 0%, transparent 70%),
+    radial-gradient(38% 34% at 82% 14%, rgba(43, 107, 255, 0.34) 0%, transparent 70%),
+    radial-gradient(46% 42% at 70% 82%, rgba(241, 7, 163, 0.26) 0%, transparent 72%),
+    radial-gradient(34% 30% at 30% 88%, rgba(0, 212, 255, 0.20) 0%, transparent 70%),
+    /* base */
+    linear-gradient(160deg, var(--gx-deep) 0%, var(--gx-void) 60%, #000000 100%);
+  background-size:
+    520px 300px, 520px 300px, 520px 300px, 520px 300px,
+    520px 300px, 520px 300px, 520px 300px,
+    cover, cover, cover, cover, cover;
+  background-repeat:
+    repeat, repeat, repeat, repeat, repeat, repeat, repeat,
+    no-repeat, no-repeat, no-repeat, no-repeat, no-repeat;
+  background-attachment: fixed;
+}
+
+/* L'app flotte au-dessus du fond et le laisse transparaitre.
+   Liste volontairement courte : chaque selecteur large coute a
+   chaque recalcul de style. */
+#app-mount,
+#app-mount [class*="appAsidePanelWrapper"],
+#app-mount [class*="notAppAsidePanel"],
+#app-mount [class*="baseLayer"],
+#app-mount [class*="chatContent"],
+#app-mount [class*="messagesWrapper"],
+#app-mount [class*="chat_"] {
+  background-color: transparent !important;
+}
+
+/* ============================================================
+   4. SURFACES
+   Couleurs semi-transparentes simples : un blend GPU, pas de flou.
+   ============================================================ */
+[class*="sidebar_"],
+[class*="membersWrap"],
+[class*="panels_"],
+[class*="peopleColumn"] {
+  background-color: var(--gx-panel) !important;
+  border-inline: 1px solid var(--gx-border);
+}
+
+[class*="guilds_"] {
+  background-color: var(--gx-panel-2) !important;
+}
+
+/* En-tete de salon */
+[class*="title_"][class*="container"],
+[class*="upperContainer"] {
+  background-color: rgba(10, 6, 24, 0.55) !important;
+  border-bottom: 1px solid var(--gx-border);
+  box-shadow: none !important;
+}
+
+/* Modales, popouts, menus : fond opaque, bordure simple.
+   Pas d'ombre floue large, qui force un repaint sur toute la zone. */
+[class*="menu_"],
+[class*="autocomplete"],
+[class*="tooltip_"] {
+  border: 1px solid var(--gx-border) !important;
+  border-radius: var(--gx-radius) !important;
+}
+
+/* ============================================================
+   5. SERVEURS & SALONS
+   ============================================================ */
+/* Pilule de selection coloree (element unique, cout nul) */
+[class*="listItem_"] [class*="pill"] span,
+[class*="listItemWrapper"] [class*="pill"] span {
+  background: linear-gradient(180deg, var(--gx-nebula-4), var(--gx-accent)) !important;
+}
+
+/* Salons : transition sur background-color uniquement.
+   Pas de box-shadow anime, pas de filter. */
+[class*="link_"][class*="channel"] {
+  border-radius: var(--gx-radius);
+  transition: background-color 0.12s linear;
+}
+[class*="link_"]:hover {
+  background-color: var(--gx-glass) !important;
+}
+[class*="modeSelected"] [class*="link_"],
+[class*="link_"][class*="selected"] {
+  background-color: rgba(168, 107, 255, 0.18) !important;
+  box-shadow: inset 2px 0 0 var(--gx-accent-hi);
+}
+
+/* Categories */
+[class*="containerDefault"] > [class*="wrapper_"] > [class*="name_"] {
+  letter-spacing: 0.08em;
+  color: var(--gx-text-dim);
+}
+
+/* ============================================================
+   6. MESSAGES
+   Zone la plus dense et la plus scrollee : on n'y met aucune
+   transition ni ombre, seulement des couleurs plates.
+   ============================================================ */
+[class*="message_"]:hover {
+  background-color: var(--gx-glass) !important;
+}
+[class*="mentioned_"] {
+  background-color: rgba(241, 7, 163, 0.10) !important;
+  box-shadow: inset 2px 0 0 var(--gx-nebula-2);
+}
+
+[class*="mention"] {
+  background-color: rgba(168, 107, 255, 0.20) !important;
+  color: var(--gx-accent-hi) !important;
+  border-radius: 6px;
+}
+a[class*="anchor"] {
+  color: var(--gx-nebula-4);
+}
+code, pre, [class*="hljs"] {
+  background-color: rgba(5, 3, 15, 0.70) !important;
+  border: 1px solid var(--gx-border) !important;
+  border-radius: 8px !important;
+}
+[class*="blockquoteDivider"] {
+  background-color: var(--gx-accent) !important;
+}
+
+/* Barre de saisie : la bordure change de couleur au focus,
+   sans halo diffus (une ombre floue = repaint de la zone). */
+[class*="channelTextArea"] form {
+  border-radius: var(--gx-radius) !important;
+  border: 1px solid var(--gx-border);
+  transition: border-color 0.12s linear;
+}
+[class*="channelTextArea"] form:focus-within {
+  border-color: var(--gx-accent);
+}
+
+/* ============================================================
+   7. DETAILS
+   ============================================================ */
+[class*="colorBrand"] {
+  background: linear-gradient(135deg, var(--gx-nebula-1), var(--gx-nebula-2)) !important;
+  border: none !important;
+}
+[class*="colorBrand"]:hover {
+  background: linear-gradient(135deg, #8f4bff, #ff2fb8) !important;
+}
+
+/* Barres de defilement */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background-color: rgba(168, 107, 255, 0.45);
+  border-radius: 8px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--gx-accent-hi);
+  background-clip: padding-box;
+}
+
+::selection {
+  background-color: rgba(168, 107, 255, 0.45);
+  color: #ffffff;
+}
+
+[class*="divider_"] { border-color: var(--gx-border) !important; }
+
+/* ============================================================
+   8. MOUVEMENT : derive des etoiles + etoiles filantes
+   Les seules animations du theme. Elles n'animent que transform et
+   opacity : le navigateur les delegue au compositeur GPU, sans aucun
+   repaint ni recalcul de layout. Quelques petits calques fixes,
+   c'est tout ce que ca coute.
+
+   Repartition des calques (html et body fournissent les pseudo-elements) :
+     html::before -> champ d'etoiles qui derive, DERRIERE l'interface
+     html::after  -> etoile filante 1, AU-DESSUS de l'interface
+     body::after  -> etoile filante 2, AU-DESSUS de l'interface
+   Les filantes doivent passer au-dessus : les panneaux de Discord sont
+   opaques a plus de 80%, une trainee qui passe dessous est invisible.
+   pointer-events: none garantit qu'elles n'interceptent aucun clic.
+   ============================================================ */
+
+/* L'app passe au-dessus du champ d'etoiles, sous les filantes. */
+#app-mount {
+  position: relative;
+  z-index: 1;
+}
+
+/* --- Derive : un second champ d'etoiles, plus clairseme, qui descend
+   lentement. Combine aux etoiles fixes du fond, ca donne un effet de
+   parallaxe. Le calque fait 2x la hauteur de l'ecran et se decale
+   d'exactement une tuile (300px), donc la boucle est invisible. --- */
+html::before {
+  content: "";
+  position: fixed;
+  top: -50%;
+  left: 0;
+  width: 100%;
+  height: 200%;
+  z-index: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(1px 1px at 20px 30px, rgba(255, 255, 255, 0.80), transparent),
+    radial-gradient(1.4px 1.4px at 320px 110px, rgba(0, 212, 255, 0.60), transparent),
+    radial-gradient(1px 1px at 400px 260px, rgba(255, 255, 255, 0.60), transparent),
+    radial-gradient(1.2px 1.2px at 140px 220px, rgba(201, 162, 255, 0.70), transparent);
+  background-size: 520px 300px;
+  will-change: transform;
+  animation: gx-drift 200s linear infinite;
+}
+
+@keyframes gx-drift {
+  from { transform: translate3d(0, 0, 0); }
+  to   { transform: translate3d(0, 300px, 0); }
+}
+
+/* --- Etoiles filantes : une trainee violette a tete blanche qui
+   traverse l'ecran en diagonale. Le rotate est applique AVANT le
+   translate, donc l'etoile se deplace le long de son propre axe : la
+   trainee suit exactement sa trajectoire.
+   Deux calques identiques decales dans le temps, ce qui donne un
+   passage toutes les ~4 s au lieu d'un toutes les 14 s. --- */
+html::after,
+body::after {
+  content: "";
+  position: fixed;
+  left: 0;
+  z-index: 10;             /* au-dessus de #app-mount */
+  width: 260px;
+  height: 3px;
+  pointer-events: none;
+  border-radius: 3px;
+  background: linear-gradient(90deg,
+              rgba(168, 107, 255, 0) 0%,
+              rgba(168, 107, 255, 0.70) 55%,
+              rgba(201, 162, 255, 0.95) 88%,
+              rgba(255, 255, 255, 1) 100%);
+  /* halo de la tete : peint une seule fois avec le calque, ensuite
+     seul le transform bouge - aucun repaint pendant la course */
+  box-shadow: 6px 0 12px rgba(201, 162, 255, 0.55);
+  opacity: 0;
+  will-change: transform, opacity;
+}
+
+html::after {
+  top: 4vh;
+  animation: gx-shoot-a 8s linear infinite;
+}
+
+body::after {
+  top: 26vh;
+  animation: gx-shoot-b 8s linear infinite;
+  animation-delay: -4s;    /* decale d'une demi-boucle */
+}
+
+/* Deux trajectoires differentes pour eviter l'effet metronome. */
+@keyframes gx-shoot-a {
+  0%   { transform: rotate(32deg) translate3d(-25vw, 0, 0); opacity: 0; }
+  2%   { opacity: 1; }
+  10%  { opacity: 1; }
+  12%  { transform: rotate(32deg) translate3d(140vw, 0, 0); opacity: 0; }
+  100% { transform: rotate(32deg) translate3d(140vw, 0, 0); opacity: 0; }
+}
+@keyframes gx-shoot-b {
+  0%   { transform: rotate(19deg) translate3d(-25vw, 0, 0); opacity: 0; }
+  2%   { opacity: 1; }
+  10%  { opacity: 1; }
+  12%  { transform: rotate(19deg) translate3d(140vw, 0, 0); opacity: 0; }
+  100% { transform: rotate(19deg) translate3d(140vw, 0, 0); opacity: 0; }
+}
+
+/* Respecte le reglage systeme "reduire les animations". */
+@media (prefers-reduced-motion: reduce) {
+  html::before,
+  html::after,
+  body::after { animation: none !important; }
+  html::after,
+  body::after { opacity: 0; }
+}
