@@ -2,7 +2,7 @@
  * @name Galaxy
  * @author Worlcat
  * @authorId 1452724190024171591
- * @version 2.5.0
+ * @version 2.10.0
  * @description Theme spatial optimise performance : nebuleuses, champ d'etoiles en parallaxe et etoiles filantes, sans backdrop-filter ni repaint continu.
  * @source https://github.com/Worlcat/betterdiscord-galaxy/blob/main/Galaxy.theme.css
  * @website https://github.com/Worlcat/betterdiscord-galaxy
@@ -51,9 +51,12 @@
   --gx-text-muted: #a79fd0;
   --gx-text-dim:   #6f6796;
 
-  /* Surfaces : opacites deja resolues, aucun calcul au runtime */
-  --gx-panel:     rgba(14, 9, 30, 0.82);
-  --gx-panel-2:   rgba(9, 5, 21, 0.88);
+  /* Surfaces : opacites deja resolues, aucun calcul au runtime.
+     Volontairement basses pour que la galaxie transparaisse partout.
+     Monter ces valeurs vers 0.80 assombrit les panneaux et rend le
+     texte plus contraste, si tu preferes la lisibilite au decor. */
+  --gx-panel:     rgba(14, 9, 30, 0.45);
+  --gx-panel-2:   rgba(9, 5, 21, 0.52);
   --gx-floating:  #150e2c;   /* opaque : popouts et menus ne laissent
                                 pas passer le fond, donc pas de blend */
   --gx-glass:     rgba(255, 255, 255, 0.04);
@@ -124,14 +127,14 @@
   --border-subtle:                 var(--gx-border);
   --border-faint:                  rgba(168, 107, 255, 0.10);
 
-  --channeltextarea-background:    rgba(26, 17, 54, 0.72);
+  --channeltextarea-background:    rgba(26, 17, 54, 0.45);
   --chat-background:               transparent;
   --chat-border:                   var(--gx-border);
   --activity-card-background:      var(--gx-glass);
   --modal-background:              #0d0820;
   --modal-footer-background:       #080513;
-  --input-background:              rgba(5, 3, 15, 0.55);
-  --deprecated-panel-background:   var(--gx-panel-2);
+  --input-background:              rgba(5, 3, 15, 0.40);
+  --deprecated-panel-background:   rgba(9, 5, 21, 0.55);
 
   --text-normal:      var(--gx-text);
   --text-default:     var(--gx-text);
@@ -187,15 +190,21 @@ body {
     radial-gradient(38% 34% at 82% 14%, rgba(43, 107, 255, 0.34) 0%, transparent 70%),
     radial-gradient(46% 42% at 70% 82%, rgba(241, 7, 163, 0.26) 0%, transparent 72%),
     radial-gradient(34% 30% at 30% 88%, rgba(0, 212, 255, 0.20) 0%, transparent 70%),
+    /* bords : sans elles, le rail des serveurs et la liste des salons
+       tombent dans une zone noire et se lisent comme des bandes */
+    radial-gradient(26% 55% at 0% 42%, rgba(123, 47, 247, 0.42) 0%, transparent 75%),
+    radial-gradient(22% 45% at 0% 92%, rgba(241, 7, 163, 0.28) 0%, transparent 75%),
+    radial-gradient(24% 50% at 100% 60%, rgba(43, 107, 255, 0.30) 0%, transparent 75%),
     /* base */
     linear-gradient(160deg, var(--gx-deep) 0%, var(--gx-void) 60%, #000000 100%);
   background-size:
     520px 300px, 520px 300px, 520px 300px, 520px 300px,
     520px 300px, 520px 300px, 520px 300px,
-    cover, cover, cover, cover, cover;
+    cover, cover, cover, cover, cover, cover, cover, cover;
   background-repeat:
     repeat, repeat, repeat, repeat, repeat, repeat, repeat,
-    no-repeat, no-repeat, no-repeat, no-repeat, no-repeat;
+    no-repeat, no-repeat, no-repeat, no-repeat,
+    no-repeat, no-repeat, no-repeat, no-repeat;
   background-attachment: fixed;
 }
 
@@ -235,22 +244,36 @@ body {
    4. SURFACES
    Couleurs semi-transparentes simples : un blend GPU, pas de flou.
    ============================================================ */
+/* Degrade violet plutot qu'un aplat sombre : meme a faible opacite, un
+   gris neutre pose sur une zone noire du fond se lit comme une bande. */
 [class*="sidebar_"],
 [class*="membersWrap"],
+[class*="members_"],
+[class*="memberList"],
+[class*="sidebarList"],
 [class*="panels_"],
 [class*="peopleColumn"] {
-  background-color: var(--gx-panel) !important;
+  background: linear-gradient(160deg,
+              rgba(46, 24, 92, 0.42) 0%,
+              rgba(22, 12, 48, 0.48) 55%,
+              rgba(38, 16, 70, 0.45) 100%) !important;
   border-inline: 1px solid var(--gx-border);
 }
 
-[class*="guilds_"] {
-  background-color: var(--gx-panel-2) !important;
+[class*="guilds_"],
+[class*="guildsWrapper"],
+[class*="itemsContainer"],
+[class*="tree_"] {
+  background: linear-gradient(180deg,
+              rgba(40, 20, 82, 0.50) 0%,
+              rgba(18, 10, 40, 0.55) 60%,
+              rgba(48, 18, 78, 0.50) 100%) !important;
 }
 
 /* En-tete de salon */
 [class*="title_"][class*="container"],
 [class*="upperContainer"] {
-  background-color: rgba(10, 6, 24, 0.55) !important;
+  background-color: rgba(10, 6, 24, 0.30) !important;
   border-bottom: 1px solid var(--gx-border);
   box-shadow: none !important;
 }
@@ -316,7 +339,7 @@ a[class*="anchor"] {
   color: var(--gx-nebula-4);
 }
 code, pre, [class*="hljs"] {
-  background-color: rgba(5, 3, 15, 0.70) !important;
+  background-color: rgba(5, 3, 15, 0.55) !important;
   border: 1px solid var(--gx-border) !important;
   border-radius: 8px !important;
 }
@@ -326,7 +349,19 @@ code, pre, [class*="hljs"] {
 
 /* Barre de saisie : la bordure change de couleur au focus,
    sans halo diffus (une ombre floue = repaint de la zone). */
-[class*="channelTextArea"] form {
+/* Le bandeau qui entoure la zone de saisie est peint a part et se lit
+   comme une bande noire : on le neutralise, et la barre elle-meme
+   recoit le degrade violet des panneaux. */
+[class*="channelBottomBarArea"],
+[class*="channelTextArea"] {
+  background: transparent !important;
+}
+
+[class*="channelTextArea"] form,
+[class*="channelTextArea"] [class*="scrollableContainer"] {
+  background: linear-gradient(120deg,
+              rgba(46, 24, 92, 0.48) 0%,
+              rgba(24, 13, 52, 0.52) 100%) !important;
   border-radius: var(--gx-radius) !important;
   border: 1px solid var(--gx-border);
   transition: border-color 0.12s linear;
