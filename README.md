@@ -7,6 +7,8 @@ sans repaint ni recalcul de layout.
 
 ## Aperçu
 
+![Aperçu du thème Galaxy](preview/galaxy-preview.png)
+
 - Fond d'espace profond : nébuleuses violet / magenta / bleu / cyan et champ d'étoiles.
 - Champ d'étoiles secondaire qui dérive lentement, pour un effet de parallaxe.
 - Étoiles filantes traversant l'écran en diagonale, environ toutes les 4 secondes.
