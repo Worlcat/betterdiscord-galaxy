@@ -3,7 +3,7 @@
  * @author Worlcat
  * @authorId 1452724190024171591
  * @version 2.29.0
- * @description Theme spatial optimise performance : nebuleuses, champ d'etoiles en parallaxe et etoiles filantes, sans backdrop-filter ni repaint continu.
+ * @description Theme spatial leger : nebuleuses, champ d'etoiles et un astronaute qui marche sur la barre de saisie. Fond statique, aucun backdrop-filter, une seule animation.
  * @source https://github.com/Worlcat/betterdiscord-galaxy/blob/main/Galaxy.theme.css
  * @website https://github.com/Worlcat/betterdiscord-galaxy
  * @invite
@@ -15,9 +15,11 @@
  *  - aucun backdrop-filter (le poste le plus cher : recomposition de
  *    tout ce qui se trouve derriere la surface, a chaque frame) ;
  *  - fond peint une seule fois puis mis en cache par le compositeur ;
- *  - les deux seules animations (derive des etoiles, etoile filante)
- *    n'animent que transform et opacity : composition GPU pure, zero
- *    repaint et zero recalcul de layout ;
+ *  - une seule animation dans tout le theme (l'astronaute). Une
+ *    animation continue empeche le compositeur de s'endormir, meme
+ *    quand son element est invisible : c'est le vrai cout, et il est
+ *    mesurable. La derive du fond et les etoiles filantes ont ete
+ *    retirees pour cette raison ;
  *  - aucun filter: drop-shadow / blur au survol (repaint a chaque hover) ;
  *  - transitions limitees a background-color et color, jamais sur des
  *    proprietes qui declenchent un relayout ;
@@ -551,19 +553,16 @@ code, pre, [class*="hljs"] {
 [class*="divider_"] { border-color: var(--gx-border) !important; }
 
 /* ============================================================
-   8. MOUVEMENT : derive des etoiles + etoiles filantes
+   8. MOUVEMENT : l'astronaute
    Les seules animations du theme. Elles n'animent que transform et
    opacity : le navigateur les delegue au compositeur GPU, sans aucun
    repaint ni recalcul de layout. Quelques petits calques fixes,
    c'est tout ce que ca coute.
 
    Repartition des calques (html et body fournissent les pseudo-elements) :
-   Les filantes doivent passer au-dessus : les panneaux de Discord sont
-   opaques a plus de 80%, une trainee qui passe dessous est invisible.
-   pointer-events: none garantit qu'elles n'interceptent aucun clic.
+   pointer-events: none garantit qu'il n'intercepte aucun clic.
    ============================================================ */
 
-/* L'app passe au-dessus du champ d'etoiles, sous les filantes. */
 #app-mount {
   position: relative;
   z-index: 1;

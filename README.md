@@ -10,8 +10,6 @@ sans repaint ni recalcul de layout.
 ![Aperçu du thème Galaxy](preview/galaxy-preview.png)
 
 - Fond d'espace profond : nébuleuses violet / magenta / bleu / cyan et champ d'étoiles.
-- Champ d'étoiles secondaire qui dérive lentement, pour un effet de parallaxe.
-- Étoiles filantes traversant l'écran en diagonale, environ toutes les 4 secondes.
 - Accents violets : salon actif, pilule de sélection, mentions, scrollbars, boutons.
 - Un astronaute traverse la barre de saisie à pied — sprite SVG intégré, aucune image à charger.
 
@@ -36,11 +34,13 @@ Tout se règle dans le bloc `1. PALETTE` en haut du fichier.
 | `--gx-panel`, `--gx-panel-2` | Opacité des panneaux |
 | `--gx-radius` | Arrondi des surfaces |
 
-Fréquence des étoiles filantes : la durée `8s` des animations `gx-shoot-a` /
-`gx-shoot-b` en section 8. Plus courte = passages plus fréquents.
+Vitesse de l'astronaute : la durée `38s` de l'animation `gx-walk` en section 8,
+et `0.56s` pour la cadence des pas — garde un rapport cohérent entre les deux,
+sinon il glisse au lieu de marcher.
 
-Pour tout figer, il suffit de commenter les lignes `animation:` de la section 8.
-Le thème respecte également le réglage système « réduire les animations ».
+Pour un thème totalement statique, commente les lignes `animation:` de la
+section 8. Le thème respecte également le réglage système « réduire les
+animations ».
 
 ## Notes de performance
 
@@ -50,6 +50,10 @@ Ce qui est volontairement absent, et pourquoi :
   chaque frame. C'est de loin le poste le plus coûteux dans un thème Discord.
 - **`filter` animé** (`hue-rotate`, `drop-shadow`) sur des couches plein écran —
   repaint permanent, même fenêtre inactive.
+- **Les animations de fond continues** — mesurées à ~40 % d'un cœur pour une
+  seule couche plein écran, et 5 % pour deux étoiles filantes pourtant
+  invisibles 85 % du temps. Une animation qui tourne empêche le compositeur de
+  s'endormir, indépendamment de ce qu'elle dessine.
 - **Sélecteurs fourre-tout** (`[class*="container_"]`, `[class*="scroller_"]`) —
   ils matchent des milliers de nœuds à chaque recalcul de style.
 
