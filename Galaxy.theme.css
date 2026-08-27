@@ -2,7 +2,7 @@
  * @name Galaxy
  * @author Worlcat
  * @authorId 1452724190024171591
- * @version 2.3.0
+ * @version 2.5.0
  * @description Theme spatial optimise performance : nebuleuses, champ d'etoiles en parallaxe et etoiles filantes, sans backdrop-filter ni repaint continu.
  * @source https://github.com/Worlcat/betterdiscord-galaxy/blob/main/Galaxy.theme.css
  * @website https://github.com/Worlcat/betterdiscord-galaxy
@@ -199,17 +199,36 @@ body {
   background-attachment: fixed;
 }
 
-/* L'app flotte au-dessus du fond et le laisse transparaitre.
-   Liste volontairement courte : chaque selecteur large coute a
-   chaque recalcul de style. */
+/* L'app doit laisser passer le fond.
+   Les variables ne suffisent pas : Discord peint plusieurs conteneurs
+   avec des regles CSS propres, il faut donc les neutraliser un par un.
+   C'est le seul endroit du theme ou j'utilise des selecteurs larges ;
+   ils coutent un peu au recalcul de style, mais sans eux le fond est
+   entierement masque et le theme n'a plus d'objet.
+   Les panneaux qui doivent rester teintes (sidebar, membres, rail) se
+   voient reattribuer leur couleur en section 4, qui vient apres. */
 #app-mount,
+#app-mount > div,
+#app-mount [class*="app_"],
 #app-mount [class*="appAsidePanelWrapper"],
 #app-mount [class*="notAppAsidePanel"],
 #app-mount [class*="baseLayer"],
+#app-mount [class*="layers_"],
+#app-mount [class*="layer_"],
+#app-mount [class*="container_"],
+#app-mount [class*="content_"],
+#app-mount [class*="chat_"],
 #app-mount [class*="chatContent"],
 #app-mount [class*="messagesWrapper"],
-#app-mount [class*="chat_"] {
-  background-color: transparent !important;
+#app-mount [class*="scroller_"],
+#app-mount [class*="page_"],
+#app-mount [class*="bg_"],
+#app-mount [class*="base_"],
+#app-mount [class*="bannerVisible"] {
+  /* Propriete raccourcie, pas background-color : Discord peint certains
+     conteneurs avec un degrade, qu'une surcharge de la seule couleur
+     laisserait intact. */
+  background: transparent !important;
 }
 
 /* ============================================================
@@ -319,16 +338,10 @@ code, pre, [class*="hljs"] {
 /* ============================================================
    7. DETAILS
    ============================================================ */
-/* Uniquement les boutons remplis de marque (Rejoindre, Envoyer, etc.).
-   Le sélecteur large [class*="colorBrand"] attrapait aussi les boutons
-   du panneau vocal, qui se retrouvaient en degrade violet. */
-button[class*="lookFilled"][class*="colorBrand"] {
-  background: linear-gradient(135deg, var(--gx-nebula-1), var(--gx-nebula-2)) !important;
-  border: none !important;
-}
-button[class*="lookFilled"][class*="colorBrand"]:hover {
-  background: linear-gradient(135deg, #8f4bff, #ff2fb8) !important;
-}
+/* Les boutons de marque sont deja colores par la variable
+   --button-filled-brand-background (section 2). Pas de regle dediee :
+   le selecteur [class*="colorBrand"] attrapait aussi les boutons du
+   panneau vocal, qui se retrouvaient en degrade violet. */
 
 /* Barres de defilement */
 ::-webkit-scrollbar { width: 8px; height: 8px; }
