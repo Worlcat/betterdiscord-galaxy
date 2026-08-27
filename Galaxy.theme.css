@@ -2,7 +2,7 @@
  * @name Galaxy
  * @author Worlcat
  * @authorId 1452724190024171591
- * @version 2.26.0
+ * @version 2.27.0
  * @description Theme spatial optimise performance : nebuleuses, champ d'etoiles en parallaxe et etoiles filantes, sans backdrop-filter ni repaint continu.
  * @source https://github.com/Worlcat/betterdiscord-galaxy/blob/main/Galaxy.theme.css
  * @website https://github.com/Worlcat/betterdiscord-galaxy
@@ -255,13 +255,15 @@ body {
    un element INTERNE portant `container_` : mes propres regles de
    transparence (section 3) l'atteignaient. D'ou une regle qui vise les
    descendants, avec une specificite superieure (1,2,0 contre 1,1,0) :
-   elle annule la transparence la ou elle ne doit pas s'appliquer. */
+   elle annule la transparence la ou elle ne doit pas s'appliquer.
+
+   Uniquement des elements de CONTENU. Surtout pas `layer_`, `base_` ni
+   `bg_` : ce sont des conteneurs de positionnement qui occupent tout
+   l'ecran, et les rendre opaques revient a poser une plaque pleine
+   par-dessus Discord. */
 #app-mount [class*="layerContainer" i] [class*="container_"],
 #app-mount [class*="layerContainer" i] [class*="content_"],
 #app-mount [class*="layerContainer" i] [class*="scroller_"],
-#app-mount [class*="layerContainer" i] [class*="layer_"],
-#app-mount [class*="layerContainer" i] [class*="base_"],
-#app-mount [class*="layerContainer" i] [class*="bg_"],
 #app-mount [class*="popout" i] [class*="container_"],
 #app-mount [class*="popout" i] [class*="content_"],
 #app-mount [class*="popout" i] [class*="scroller_"],
