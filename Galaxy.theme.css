@@ -2,7 +2,7 @@
  * @name Galaxy
  * @author Worlcat
  * @authorId 1452724190024171591
- * @version 2.29.0
+ * @version 2.25.0
  * @description Theme spatial optimise performance : nebuleuses, champ d'etoiles en parallaxe et etoiles filantes, sans backdrop-filter ni repaint continu.
  * @source https://github.com/Worlcat/betterdiscord-galaxy/blob/main/Galaxy.theme.css
  * @website https://github.com/Worlcat/betterdiscord-galaxy
@@ -158,31 +158,6 @@
   --button-filled-brand-background-hover: var(--gx-accent-hi);
   --control-brand-foreground:             var(--gx-accent-hi);
 
-  /* Cartes du panneau de profil (activite recente, bio, connexions).
-     Discord les peint avec ces jetons, dont la valeur derive de sa
-     palette --neutral-*, d'ou leur bleu marine. Le !important est
-     necessaire : Discord les redefinit sur des selecteurs plus
-     specifiques que :root. */
-  --user-profile-overlay-background:          rgba(255, 255, 255, 0.06) !important;
-  --user-profile-overlay-background-hover:    rgba(255, 255, 255, 0.10) !important;
-  --user-profile-background-hover:            rgba(255, 255, 255, 0.08) !important;
-  --user-profile-toolbar-background:          rgba(255, 255, 255, 0.06) !important;
-  --user-profile-activity-toolbar-background: rgba(255, 255, 255, 0.06) !important;
-  --user-profile-border:                      var(--gx-border) !important;
-
-  /* Famille "gradient" : Discord s'en sert pour les fonds degrades des
-     cartes (ex. .listeningAlong, la carte Spotify du profil, qui fait
-     `var(--background-gradient-lowest, var(--background-base-low))`).
-     Sans ces lignes, seule une partie des cartes suit le theme. */
-  --background-gradient-lowest:  rgba(255, 255, 255, 0.06) !important;
-  --background-gradient-lower:   rgba(255, 255, 255, 0.06) !important;
-  --background-gradient-low:     rgba(255, 255, 255, 0.07) !important;
-  --background-gradient-high:    rgba(255, 255, 255, 0.08) !important;
-  --background-gradient-higher:  rgba(255, 255, 255, 0.09) !important;
-  --background-gradient-highest: rgba(255, 255, 255, 0.10) !important;
-  --background-gradient-chat:    transparent !important;
-  --background-gradient-app-frame: transparent !important;
-
   /* Mentions et reponses : Discord les surligne en jaune/orange via ces
      jetons. On les repeint en magenta pour rester dans la palette. */
   --background-mentioned:            rgba(241, 7, 163, 0.10);
@@ -270,39 +245,6 @@ body {
      conteneurs avec un degrade, qu'une surcharge de la seule couleur
      laisserait intact. */
   background: transparent !important;
-}
-
-/* Les surfaces flottantes doivent rester OPAQUES : un popout se
-   superpose a l'interface, le texte du dessous transparaitrait au
-   travers.
-
-   Ce n'est pas l'element "popout" lui-meme qui etait transparent, mais
-   un element INTERNE portant `container_` : mes propres regles de
-   transparence (section 3) l'atteignaient. D'ou une regle qui vise les
-   descendants, avec une specificite superieure (1,2,0 contre 1,1,0) :
-   elle annule la transparence la ou elle ne doit pas s'appliquer.
-
-   Uniquement des elements de CONTENU. Surtout pas `layer_`, `base_` ni
-   `bg_` : ce sont des conteneurs de positionnement qui occupent tout
-   l'ecran, et les rendre opaques revient a poser une plaque pleine
-   par-dessus Discord. */
-#app-mount [class*="layerContainer" i] [class*="container_"],
-#app-mount [class*="layerContainer" i] [class*="content_"],
-#app-mount [class*="layerContainer" i] [class*="scroller_"],
-#app-mount [class*="popout" i] [class*="container_"],
-#app-mount [class*="popout" i] [class*="content_"],
-#app-mount [class*="popout" i] [class*="scroller_"],
-#app-mount [class*="menu_" i] [class*="container_"],
-#app-mount [class*="menu_" i] [class*="scroller_"] {
-  background-color: var(--gx-floating) !important;
-}
-
-/* Exception a l'exception : le VOILE derriere une fenetre n'est pas une
-   surface de contenu, il doit rester translucide - sinon il masque tout
-   Discord. Meme specificite que la regle ci-dessus, place apres. */
-#app-mount [class*="layerContainer" i] [class*="backdrop" i],
-#app-mount [class*="backdrop" i] {
-  background-color: rgba(5, 3, 15, 0.72) !important;
 }
 
 /* ============================================================
@@ -494,7 +436,7 @@ code, pre, [class*="hljs"] {
    `overflow: hidden` quelque part au-dessus et il devient invisible.
    Le composeur ne s'appuie pas sur ce decoupage pour sa mise en page. */
 [class*="channelBottomBarArea"],
-form[class*="form_"],
+[class*="channelTextArea"],
 [class*="channelTextArea"],
 [class*="channelTextArea"] [class*="scrollableContainer"] {
   overflow: visible !important;
@@ -504,14 +446,18 @@ form[class*="form_"],
    Attention a la hierarchie reelle de Discord : le <form> est le
    PARENT, channelTextArea est dedans. Un selecteur du type
    `[class*="channelTextArea"] form` ne correspond a rien. */
-/* Plusieurs elements imbriques portent la classe channelTextArea :
-   sans filtre, chacun recoit son propre astronaute. `:not(:has(...))`
-   ne garde que le plus profond, donc un seul. */
-[class*="channelTextArea"]:not(:has([class*="channelTextArea"])) {
+/* Ancre sur channelTextArea, qui porte deja `position: relative`.
+   Surtout PAS sur le <form> du composeur : Discord lui applique
+   `display: contents`, donc il ne genere aucune boite et ne peut
+   porter aucun pseudo-element.
+   Pas de `:has()` non plus pour filtrer les doublons : Chromium le
+   reevalue a chaque mutation du DOM, or le composeur mute a chaque
+   frappe au clavier - c'etait un cout permanent pour rien. */
+[class*="channelTextArea"] {
   position: relative;
 }
 
-[class*="channelTextArea"]:not(:has([class*="channelTextArea"]))::before {
+[class*="channelTextArea"]::before {
   content: "";
   position: absolute;
   left: 0;
@@ -557,7 +503,7 @@ form[class*="form_"],
 }
 
 @media (prefers-reduced-motion: reduce) {
-  [class*="channelTextArea"]:not(:has([class*="channelTextArea"]))::before { animation: none !important; opacity: 0; }
+  [class*="channelTextArea"]::before { animation: none !important; opacity: 0; }
 }
 
 /* Barres de defilement */
@@ -589,7 +535,6 @@ form[class*="form_"],
    c'est tout ce que ca coute.
 
    Repartition des calques (html et body fournissent les pseudo-elements) :
-     html::before -> champ d'etoiles qui derive, DERRIERE l'interface
      html::after  -> etoile filante 1, AU-DESSUS de l'interface
      body::after  -> etoile filante 2, AU-DESSUS de l'interface
    Les filantes doivent passer au-dessus : les panneaux de Discord sont
@@ -603,33 +548,13 @@ form[class*="form_"],
   z-index: 1;
 }
 
-/* --- Derive : un second champ d'etoiles, plus clairseme, qui descend
-   lentement. Combine aux etoiles fixes du fond, ca donne un effet de
-   parallaxe. Le calque fait 2x la hauteur de l'ecran et se decale
-   d'exactement une tuile (300px), donc la boucle est invisible. --- */
-html::before {
-  content: "";
-  position: fixed;
-  top: -50%;
-  left: 0;
-  width: 100%;
-  height: 200%;
-  z-index: 0;
-  pointer-events: none;
-  background-image:
-    radial-gradient(1px 1px at 20px 30px, rgba(255, 255, 255, 0.80), transparent),
-    radial-gradient(1.4px 1.4px at 320px 110px, rgba(0, 212, 255, 0.60), transparent),
-    radial-gradient(1px 1px at 400px 260px, rgba(255, 255, 255, 0.60), transparent),
-    radial-gradient(1.2px 1.2px at 140px 220px, rgba(201, 162, 255, 0.70), transparent);
-  background-size: 520px 300px;
-  will-change: transform;
-  animation: gx-drift 200s linear infinite;
-}
-
-@keyframes gx-drift {
-  from { transform: translate3d(0, 0, 0); }
-  to   { transform: translate3d(0, 300px, 0); }
-}
+/* La couche de derive du champ d'etoiles a ete retiree : elle faisait
+   la taille de l'ecran, donc le compositeur recomposait TOUT l'ecran a
+   chaque frame, en permanence. Mesure a l'appui, elle representait
+   l'essentiel des 29 % de charge GPU du thema. L'effet de parallaxe
+   qu'elle apportait etait par ailleurs imperceptible : 300 px de
+   deplacement etales sur 200 secondes.
+   Les etoiles fixes du fond (section 3) restent, elles ne coutent rien. */
 
 /* --- Etoiles filantes : une trainee violette a tete blanche qui
    traverse l'ecran en diagonale. Le rotate est applique AVANT le
@@ -688,7 +613,6 @@ body::after {
 
 /* Respecte le reglage systeme "reduire les animations". */
 @media (prefers-reduced-motion: reduce) {
-  html::before,
   html::after,
   body::after { animation: none !important; }
   html::after,
