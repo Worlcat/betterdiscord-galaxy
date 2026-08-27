@@ -2,7 +2,7 @@
  * @name Galaxy
  * @author Worlcat
  * @authorId 1452724190024171591
- * @version 2.2.0
+ * @version 2.3.0
  * @description Theme spatial optimise performance : nebuleuses, champ d'etoiles en parallaxe et etoiles filantes, sans backdrop-filter ni repaint continu.
  * @source https://github.com/Worlcat/betterdiscord-galaxy/blob/main/Galaxy.theme.css
  * @website https://github.com/Worlcat/betterdiscord-galaxy
@@ -88,7 +88,29 @@
   --background-modifier-selected:  var(--gx-glass-hi);
   --background-modifier-accent:    var(--gx-border);
 
-  /* Jetons du nouveau design system Discord */
+  /* Jetons "background-*" : generation actuelle de Discord.
+     Ce sont eux qui peignent reellement les fonds aujourd'hui ; sans
+     eux le client retombe sur sa palette sombre et masque le fond.
+     Les "base-*" sont les fonds de page -> transparents.
+     Les "surface-*" sont les cartes et popouts -> opaques, pour rester
+     lisibles et eviter un blend inutile. */
+  --background-base-lowest:      transparent;
+  --background-base-lower:       transparent;
+  --background-base-lower-alt:   transparent;
+  --background-base-low:         transparent;
+  --background-base-low-alt:     transparent;
+  --background-base-medium:      transparent;
+  --background-base-medium-alt:  transparent;
+  --background-surface-high:     var(--gx-floating);
+  --background-surface-higher:   #1c1338;
+  --background-surface-highest:  #241847;
+  --background-mod-subtle:       var(--gx-glass);
+  --background-mod-faint:        rgba(255, 255, 255, 0.03);
+  --background-mod-strong:       var(--gx-glass-hi);
+  --background-overlay-chat:     transparent;
+
+  /* Jetons du design system precedent, conserves pour les clients
+     qui n'ont pas encore la nouvelle nomenclature. */
   --bg-base-primary:               transparent;
   --bg-base-secondary:             transparent;
   --bg-base-tertiary:              transparent;
@@ -297,11 +319,14 @@ code, pre, [class*="hljs"] {
 /* ============================================================
    7. DETAILS
    ============================================================ */
-[class*="colorBrand"] {
+/* Uniquement les boutons remplis de marque (Rejoindre, Envoyer, etc.).
+   Le sélecteur large [class*="colorBrand"] attrapait aussi les boutons
+   du panneau vocal, qui se retrouvaient en degrade violet. */
+button[class*="lookFilled"][class*="colorBrand"] {
   background: linear-gradient(135deg, var(--gx-nebula-1), var(--gx-nebula-2)) !important;
   border: none !important;
 }
-[class*="colorBrand"]:hover {
+button[class*="lookFilled"][class*="colorBrand"]:hover {
   background: linear-gradient(135deg, #8f4bff, #ff2fb8) !important;
 }
 
